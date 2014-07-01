@@ -12,6 +12,8 @@ __all__ = ['LruCache']
 
 import threading
 
+NONE = object()
+
 class LruCache(object):
     def __init__(self, item_max=100):
         if item_max <=0:
@@ -33,7 +35,7 @@ class LruCache(object):
         def warp(*args, **kwargs):
             key = "%s%s" % (fn.func_name, repr((args, kwargs)))
             result = self[key]
-            if result:
+            if not result is NONE:
                 return result
             else:
                 result = fn(*args, **kwargs)
@@ -50,7 +52,7 @@ class LruCache(object):
         self.put(key, value)
 
 
-    def get(self, key, default=None):
+    def get(self, key, default=NONE):
         with self.lock:
             if key in self.cache:
                 self.hits += 1
@@ -92,3 +94,5 @@ Single process cache used status:
     remove:%s
 """ % (self.item_max, self.used, ','.join(self.keys), self.miss, self.hits, self.remove)
         print used_status
+
+Cache = lambda item_max=100: LruCache(item_max).fn_cache
