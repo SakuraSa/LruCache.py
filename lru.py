@@ -95,4 +95,31 @@ Single process cache used status:
 """ % (self.item_max, self.used, ','.join(self.keys), self.miss, self.hits, self.remove)
         print used_status
 
-Cache = lambda item_max=100: LruCache(item_max).fn_cache
+class CachedFunc(LruCache):
+    def __init__(self, func, im_self, im_cls , item_max=100):
+        LruCache.__init__(self, item_max=item_max)
+        self.func = func
+        self.im_self = im_self
+        self.imcls = im_cls
+
+    def __call__(self, *args, **kwargs):
+        key = "%s%s" % (self.func.__name__, repr((args, kwargs)))
+        result = self[key]
+        if not result is NONE:
+            return result
+        else:
+            self[key] = result = self.func(self.im_self, *args, **kwargs)
+            return result
+
+def Cache(item_max=100):
+    class wrapper(object):
+        def __init__(self, func):
+            object.__init__(self)
+            self.func = func
+
+        def __get__(self, obj, cls):
+            if obj is None:
+                return self.func
+            value = obj.__dict__[self.func.__name__] = CachedFunc(self.func, obj, cls, item_max)
+            return value
+    return wrapper
