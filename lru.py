@@ -30,20 +30,6 @@ class LruCache(object):
         self.used = 0
         self.remove = 0
 
-
-    def fn_cache(self, fn):
-        def warp(*args, **kwargs):
-            key = "%s%s" % (fn.func_name, repr((args, kwargs)))
-            result = self[key]
-            if not result is NONE:
-                return result
-            else:
-                result = fn(*args, **kwargs)
-                self[key] = result
-                return result
-        return warp
-
-
     def __getitem__(self, key):
         return self.get(key)
 
@@ -51,6 +37,8 @@ class LruCache(object):
     def __setitem__(self, key, value):
         self.put(key, value)
 
+    def __contains__(self, key):
+        return key in self.cache
 
     def get(self, key, default=NONE):
         with self.lock:
@@ -95,31 +83,66 @@ Single process cache used status:
 """ % (self.item_max, self.used, ','.join(self.keys), self.miss, self.hits, self.remove)
         print used_status
 
-class CachedFunc(LruCache):
-    def __init__(self, func, im_self, im_cls , item_max=100):
-        LruCache.__init__(self, item_max=item_max)
+
+class DecorationMode(object):
+    Function = 0
+    StaticFunction = 1
+    ClassFunction = 2
+    InstanceFunction = 3
+
+class Cached(LruCache):
+    def __init__(self, func, mode=0, item_max=100):
+        LruCache.__init__(self, item_max)
+        self.mode = mode
         self.func = func
-        self.im_self = im_self
-        self.imcls = im_cls
+        self.obj = None
+        self.cls = None
+
+    def cached_func(self, *args, **kwagrs):
+        if self.mode == DecorationMode.InstanceFunction:
+            args = (self.obj, ) + args
+        elif self.mode == DecorationMode.ClassFunction:
+            args = (self.cls, ) + args
+        key = repr(args) + repr(kwagrs)
+        if key in self:
+            return self[key]
+        else:
+            value = self[key] = self.func(*args, **kwagrs)
+            return value
 
     def __call__(self, *args, **kwargs):
-        key = "%s%s" % (self.func.__name__, repr((args, kwargs)))
-        result = self[key]
-        if not result is NONE:
-            return result
+        return self.cached_func(*args, **kwargs)
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            if self.mode == DecorationMode.ClassFunction:
+                self.cls = cls
         else:
-            self[key] = result = self.func(self.im_self, *args, **kwargs)
-            return result
+            if self.mode == DecorationMode.InstanceFunction:
+                self.obj = obj
+        return self
 
-def Cache(item_max=100):
-    class wrapper(object):
-        def __init__(self, func):
-            object.__init__(self)
-            self.func = func
 
-        def __get__(self, obj, cls):
-            if obj is None:
-                return self.func
-            value = obj.__dict__[self.func.__name__] = CachedFunc(self.func, obj, cls, item_max)
-            return value
-    return wrapper
+def CachedFunction(item_max=100):
+    def Decoration(func):
+        return Cached(func, DecorationMode.Function, item_max)
+    return Decoration
+
+
+def CachedStaticFunction(item_max=100):
+    def Decoration(func):
+        return Cached(func, DecorationMode.StaticFunction, item_max)
+    return Decoration
+
+
+def CachedClassFunction(item_max=100):
+    def Decoration(func):
+        return Cached(func, DecorationMode.ClassFunction, item_max)
+    return Decoration
+
+
+def CachedInstanceFunction(item_max=100):
+    def Decoration(func):
+        return Cached(func, DecorationMode.InstanceFunction, item_max)
+    return Decoration
+    

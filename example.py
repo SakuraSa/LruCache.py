@@ -6,26 +6,25 @@
     E-mail:clverdeng@gmail.com
 """
 
-import lru as cache
+from lru import CachedFunction
 
-lru = cache.LruCache(item_max=5)
 
-@lru.fn_cache
+@CachedFunction(100)
 def test_fn(x,y):
     return x,y
 
 print test_fn(1,2)
 print test_fn(1,2)
 print test_fn(3,4)
-print 'get key:test value:%s' % lru.get("test1") 
-lru.put('test1', 1)
-lru.put("test2", 2)
-lru.put("test3", 3)
-lru.put("test4", 4)
-lru.put("test5", 5)
-print 'get key:test value:%s' % lru.get("test1") 
-lru.put("test6", 6)
-lru.put("test7", 7) 
-print 'get key:test6 value:%s' % lru.get("test6") 
-print 'get key:test3 value:%s' % lru.get("test3") 
-lru.status()   
+print 'get key:test value:%s' % test_fn.get("test1") 
+test_fn.put('test1', 1)
+test_fn.put("test2", 2)
+test_fn.put("test3", 3)
+test_fn.put("test4", 4)
+test_fn.put("test5", 5)
+print 'get key:test value:%s' % test_fn.get("test1") 
+test_fn.put("test6", 6)
+test_fn.put("test7", 7) 
+print 'get key:test6 value:%s' % test_fn.get("test6") 
+print 'get key:test3 value:%s' % test_fn.get("test3") 
+test_fn.status()   
