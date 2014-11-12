@@ -6,10 +6,8 @@ Implements LRU(Last-recently-used) cache algorithm, Support the thread safe, Wit
 
 Example:
 
-    import lru as cache
+    from lru import CachedFunction
 
-    lru = cache.LruCache(item_max=5)
-      
-    @lru.fn_cache     
+    @CachedFunction(100)
     def test_fn(x,y):
         return x,y
