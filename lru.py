@@ -6,8 +6,16 @@
     E-mail:clverdeng@gmail.com
 """
 
-__version__ = '0.1'
-__all__ = ['LruCache']
+__version__ = '0.2'
+__all__ = [
+    'LruCache', 
+    'Cached',
+    'DecorationMode', 
+    'CachedFunction', 
+    'CachedStaticFunction', 
+    'CachedClassFunction', 
+    'CachedInstanceFunction'
+]
 
 
 import threading
