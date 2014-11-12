@@ -6,25 +6,59 @@
     E-mail:clverdeng@gmail.com
 """
 
+#time cost check helper
+from time import time
+
+class Timer(object):
+    def __init__(self, print_cost=False, formatter="time cost: %(cost).3fs"):
+        object.__init__(self)
+        self.print_cost = print_cost
+        self.formatter  = formatter
+        self.running    = False
+        self.begain     = None
+        self.end        = None
+        self.cost       = None
+
+    def __enter__(self):
+        self.running = True
+        self.begain  = time()
+        return self
+
+    def __exit__(self, *args):
+        self.running = False
+        self.end     = time()
+        self.cost    = self.end - self.begain
+        if self.print_cost:
+            print self.formatter % {
+                'begain': self.begain,
+                'end': self.end,
+                'cost': self.cost
+            }
+
+
+#example
 from lru import CachedFunction
 
 
-@CachedFunction(100)
-def test_fn(x,y):
-    return x,y
+def fibonacci(n):
+    if n <= 2:
+        return 1
+    else:
+        return fibonacci(n - 1) + fibonacci(n - 2)
 
-print test_fn(1,2)
-print test_fn(1,2)
-print test_fn(3,4)
-print 'get key:test value:%s' % test_fn.get("test1") 
-test_fn.put('test1', 1)
-test_fn.put("test2", 2)
-test_fn.put("test3", 3)
-test_fn.put("test4", 4)
-test_fn.put("test5", 5)
-print 'get key:test value:%s' % test_fn.get("test1") 
-test_fn.put("test6", 6)
-test_fn.put("test7", 7) 
-print 'get key:test6 value:%s' % test_fn.get("test6") 
-print 'get key:test3 value:%s' % test_fn.get("test3") 
-test_fn.status()   
+
+@CachedFunction()
+def fibonacci_cached(n):
+    if n <= 2:
+        return 1
+    else:
+        return fibonacci_cached(n - 1) + fibonacci_cached(n - 2)
+
+if __name__ == '__main__':
+    scale = 35
+    print "begain testing with scale %d ..." % scale
+    with Timer(True, "normal time cost: %(cost).3fs") as timer0:
+        print fibonacci(scale)
+    with Timer(True, "cached time cost: %(cost).3fs") as timer1:
+        print fibonacci_cached(scale)
+    print "time cost is 1 / %d" % int(timer0.cost / timer1.cost)
